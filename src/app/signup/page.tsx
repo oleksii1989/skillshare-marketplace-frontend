@@ -1,0 +1,139 @@
+"use client";
+import { useForm } from "react-hook-form";
+import { useRouter, useSearchParams } from "next/navigation";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+
+interface SignupForm {
+  type: "individual" | "company";
+  fullName?: string;
+  companyName?: string;
+  email: string;
+  password: string;
+}
+
+export default function Signup() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupForm>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const entityType = searchParams.get("entityType") as
+    | "user"
+    | "provider"
+    | null;
+  const { setAuth } = useAuth();
+
+  const onSubmit = async (data: SignupForm) => {
+    if (!entityType) {
+      alert("Please select a role (User or Provider) from the home page.");
+      return;
+    }
+    try {
+      await api.post("/auth/signup", { ...data, entityType });
+      const response = await api.post("/auth/login", {
+        email: data.email,
+        password: data.password,
+      });
+      setAuth(response.data.access_token, entityType);
+      router.push("/dashboard");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      alert(
+        "Signup failed: " + (error.response?.data?.message || error.message)
+      );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          Signup as {entityType || "Unknown"}
+        </h1>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Type
+            </label>
+            <select
+              {...register("type", { required: "Type is required" })}
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+            >
+              <option value="individual">Individual</option>
+              <option value="company">Company</option>
+            </select>
+            {errors.type && (
+              <p className="text-red-500 text-sm">{errors.type.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <input
+              {...register("fullName")}
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              placeholder="Full Name (optional)"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Company Name
+            </label>
+            <input
+              {...register("companyName")}
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              placeholder="Company Name (optional)"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              {...register("email", { required: "Email is required" })}
+              type="email"
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              placeholder="Email"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              {...register("password", { required: "Password is required" })}
+              type="password"
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              placeholder="Password"
+            />
+            {errors.password && (
+              <p className="text-red-500 text-sm">{errors.password.message}</p>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+          >
+            Signup
+          </button>
+        </form>
+        <p className="mt-4 text-center">
+          Already have an account?{" "}
+          <button
+            onClick={() => router.push(`/login?entityType=${entityType}`)}
+            className="text-blue-500 hover:underline"
+          >
+            Login
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
