@@ -6,18 +6,27 @@ import { useAuth } from "@/context/AuthContext";
 
 interface SignupForm {
   type: "individual" | "company";
-  fullName?: string;
+  fullName: string;
   companyName?: string;
   email: string;
   password: string;
+  mobileNumber: string;
+  phoneNumber?: string;
+  businessTaxNumber?: string;
+  address?: string;
 }
 
 export default function Signup() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<SignupForm>();
+  } = useForm<SignupForm>({
+    defaultValues: {
+      type: "individual",
+    },
+  });
   const router = useRouter();
   const searchParams = useSearchParams();
   const entityType = searchParams.get("entityType") as
@@ -25,6 +34,7 @@ export default function Signup() {
     | "provider"
     | null;
   const { setAuth } = useAuth();
+  const type = watch("type"); // Watch type to toggle field visibility and validation
 
   const onSubmit = async (data: SignupForm) => {
     if (!entityType) {
@@ -74,27 +84,42 @@ export default function Signup() {
               Full Name
             </label>
             <input
-              {...register("fullName")}
+              {...register("fullName", { required: "Full Name is required" })}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              placeholder="Full Name (optional)"
+              placeholder="First Name Last Name"
             />
+            {errors.fullName && (
+              <p className="text-red-500 text-sm">{errors.fullName.message}</p>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Company Name
-            </label>
-            <input
-              {...register("companyName")}
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              placeholder="Company Name (optional)"
-            />
-          </div>
+          {type === "company" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Company Name
+              </label>
+              <input
+                {...register("companyName", {
+                  required: "Company Name is required",
+                })}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                placeholder="Company Name"
+              />
+              {errors.companyName && (
+                <p className="text-red-500 text-sm">
+                  {errors.companyName.message}
+                </p>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <input
-              {...register("email", { required: "Email is required" })}
+              {...register("email", {
+                required: "Email is required",
+                pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
+              })}
               type="email"
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
               placeholder="Email"
@@ -115,6 +140,85 @@ export default function Signup() {
             />
             {errors.password && (
               <p className="text-red-500 text-sm">{errors.password.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Mobile Number
+            </label>
+            <input
+              {...register("mobileNumber", {
+                required: "Mobile Number is required",
+              })}
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              placeholder="Mobile Number"
+            />
+            {errors.mobileNumber && (
+              <p className="text-red-500 text-sm">
+                {errors.mobileNumber.message}
+              </p>
+            )}
+          </div>
+          {type === "company" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              <input
+                {...register("phoneNumber", {
+                  required: "Phone Number is required",
+                })}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                placeholder="Phone Number"
+              />
+              {errors.phoneNumber && (
+                <p className="text-red-500 text-sm">
+                  {errors.phoneNumber.message}
+                </p>
+              )}
+            </div>
+          )}
+          {type === "company" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Business Tax Number
+              </label>
+              <input
+                {...register("businessTaxNumber", {
+                  required: "Business Tax Number is required",
+                  pattern: {
+                    value: /^[A-Z0-9]{10}$/,
+                    message:
+                      "Business Tax Number must be a 10-character string with capital letters and digits",
+                  },
+                })}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                placeholder="Business Tax Number"
+              />
+              {errors.businessTaxNumber && (
+                <p className="text-red-500 text-sm">
+                  {errors.businessTaxNumber.message}
+                </p>
+              )}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Address
+            </label>
+            <input
+              {...register("address", {
+                required: type === "individual" ? "Address is required" : false,
+              })}
+              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              placeholder={
+                type === "individual"
+                  ? "Street number, street name, City/Suburb, State, post code"
+                  : "Address (optional)"
+              }
+            />
+            {errors.address && (
+              <p className="text-red-500 text-sm">{errors.address.message}</p>
             )}
           </div>
           <button
